@@ -1,0 +1,39 @@
+custom
+channelCreate
+channelCallStateEv
+recordStop
+channelHangupComplete
+channelAnswer
+channelPark
+recordStart
+channelExecuteComplete
+playbackStop
+eventDTMF
+channelExecute
+
+
+
+events plain CUSTOM CHANNEL_CREATE CHANNEL_CALLSTATE PLAYBACK_START PLAYBACK_STOP RECORD_START RECORD_STOP CHANNEL_HANGUP_COMPLETE CHANNEL_ANSWER CHANNEL_PARK CHANNEL_EXECUTE_COMPLETE CHANNEL_EXECUTE DTMF
+
+
+Events ALL 
+
+Calls := 150
+30sec 
+
+Time  0xc00030c000  Counter : 8923
+Time  0xc00030c180  Counter : 8930
+Time  0xc00030c8a0  Counter : 8875
+Time  0xc00030c7e0  Counter : 8728
+Time  0xc000080720  Counter : 9101
+Time  0xc00030c0c0  Counter : 8824
+Time  0xc000080240  Counter : 8958
+Time  0xc0000806c0  Counter : 8848
+Time  0xc0000802a0  Counter : 8811
+Time  0xc00030cc00  Counter : 8976
+Time  0xc00030cba0  Counter : 8905
+
+AVG Event:=  300/sec Per instance
+10 Instance, 1500 Calls, 3k msg per sec
+
+
