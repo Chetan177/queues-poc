@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"strconv"
+	"math/rand"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -12,8 +12,8 @@ import (
 
 var (
 	uri          = flag.String("uri", "amqp://guest:guest@localhost:5672/", "AMQP URI")
-	exchangeName = flag.String("exchange", "test-exchange", "Durable AMQP exchange name")
-	exchangeType = flag.String("exchange-type", "direct", "Exchange type - direct|fanout|topic|x-custom")
+	exchangeName = flag.String("exchange", "hash-exchange", "Durable AMQP exchange name")
+	exchangeType = flag.String("exchange-type", "x-consistent-hash", "Exchange type - direct|fanout|topic|x-custom")
 	routingKey   = flag.String("key", "test-key", "AMQP routing key")
 	body         = flag.String("body", "foobar", "Body of message")
 	reliable     = flag.Bool("reliable", true, "Wait for the publisher confirmation before exiting")
@@ -37,6 +37,7 @@ func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable 
 	// long-lived connection as state, and publish against that.
 
 	log.Printf("dialing %q", amqpURI)
+
 	connection, err := amqp.Dial(amqpURI)
 	if err != nil {
 		return fmt.Errorf("Dial: %s", err)
@@ -44,6 +45,7 @@ func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable 
 	defer connection.Close()
 
 	log.Printf("got Connection, getting Channel")
+
 	channel, err := connection.Channel()
 	if err != nil {
 		return fmt.Errorf("Channel: %s", err)
@@ -77,7 +79,10 @@ func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable 
 
 	log.Printf("declared Exchange, publishing %dB body (%q)", len(body), body)
 	
-	for i:= 0; i< 100 ; i++ {
+	for i:= 0; ; i++ {
+		keyval:= rand.Intn(3)
+		routingKey := fmt.Sprintf("Key-%d", keyval)
+
 		log.Printf("publishing %dB body (%q), counter %d", len(body), body, i)
 		if err = channel.Publish(
 			exchange,   // publish to an exchange
@@ -88,7 +93,7 @@ func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable 
 				Headers:         amqp.Table{},
 				ContentType:     "text/plain",
 				ContentEncoding: "",
-				Body:            []byte(body +"My test counter: " +  strconv.Itoa(i)),
+				Body:            []byte(routingKey+" "+body),
 				DeliveryMode:    amqp.Transient, // 1=non-persistent, 2=persistent
 				Priority:        0,              // 0-9
 				// a bunch of application/implementation-specific fields
@@ -100,8 +105,6 @@ func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable 
 		time.Sleep(time.Second * 1)
 	}
 	
-	
-	return nil
 }
 
 // One would typically keep a channel of publishings, a sequence number, and a

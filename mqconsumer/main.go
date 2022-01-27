@@ -9,15 +9,16 @@ import (
 	"syscall"
 	"time"
 
+	// "github.com/google/uuid"
 	"github.com/streadway/amqp"
 )
 
 var (
 	uri          = flag.String("uri", "amqp://guest:guest@localhost:5672/", "AMQP URI")
-	exchange     = flag.String("exchange", "test-exchange", "Durable, non-auto-deleted AMQP exchange name")
-	exchangeType = flag.String("exchange-type", "direct", "Exchange type - direct|fanout|topic|x-custom")
+	exchange     = flag.String("exchange", "hash-exchange", "Durable, non-auto-deleted AMQP exchange name")
+	exchangeType = flag.String("exchange-type", "x-consistent-hash", "Exchange type - direct|fanout|topic|x-custom")
 	queue        = flag.String("queue", "test-queue", "Ephemeral AMQP queue name")
-	bindingKey   = flag.String("key", "test-key", "AMQP binding key")
+	bindingKey   = flag.String("key", "1", "AMQP binding key")
 	consumerTag  = flag.String("consumer-tag", "simple-consumer", "AMQP consumer tag (should not be blank)")
 	lifetime     = flag.Duration("lifetime", 5*time.Second, "lifetime of process before shutdown (0s=infinite)")
 )
@@ -84,19 +85,20 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 		return nil, fmt.Errorf("Channel: %s", err)
 	}
 
-	log.Printf("got Channel, declaring Exchange (%q)", exchange)
-	if err = c.channel.ExchangeDeclare(
-		exchange,     // name of the exchange
-		exchangeType, // type
-		true,         // durable
-		false,        // delete when complete
-		false,        // internal
-		false,        // noWait
-		nil,          // arguments
-	); err != nil {
-		return nil, fmt.Errorf("Exchange Declare: %s", err)
-	}
+	// log.Printf("got Channel, declaring Exchange (%q)", exchange)
+	// if err = c.channel.ExchangeDeclare(
+	// 	exchange,     // name of the exchange
+	// 	exchangeType, // type
+	// 	true,         // durable
+	// 	false,        // delete when complete
+	// 	false,        // internal
+	// 	false,        // noWait
+	// 	nil,          // arguments
+	// ); err != nil {
+	// 	return nil, fmt.Errorf("Exchange Declare: %s", err)
+	// }
 
+	queueName = "EventQueue-4"
 	log.Printf("declared Exchange, declaring Queue %q", queueName)
 	queue, err := c.channel.QueueDeclare(
 		queueName, // name of the queue
@@ -106,6 +108,7 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 		false,     // noWait
 		nil,       // arguments
 	)
+
 	if err != nil {
 		return nil, fmt.Errorf("Queue Declare: %s", err)
 	}

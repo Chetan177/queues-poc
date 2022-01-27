@@ -1,4 +1,5 @@
 package main
+// https://github.com/aws-samples/aws-msk-content-streaming
 
 import (
 	"context"
@@ -18,13 +19,13 @@ func newKafkaWriter(kafkaURL, topic string) *kafka.Writer {
 	return &kafka.Writer{
 		Addr:     kafka.TCP(kafkaURL),
 		Topic:    topic,
-		Balancer: &kafka.LeastBytes{},
+		Balancer: &kafka.Hash{},
 	}
 }
 
 func main() {
 	kafkaURL := "localhost:9092"
-	topic := "topicTest-0part"
+	topic := "topicTest-3part"
 
 	conn, err := kafka.Dial("tcp", kafkaURL)
 	if err != nil {
@@ -44,7 +45,7 @@ func main() {
 	topicConfigs := []kafka.TopicConfig{
 		kafka.TopicConfig{
 			Topic:             topic,
-			NumPartitions:     1,
+			NumPartitions:     3,
 			ReplicationFactor: 1,
 		},
 	}
@@ -60,9 +61,9 @@ func main() {
 	fmt.Println("start producing ... !!")
 	for i := 0; ; i++ {
 		keyval:= rand.Intn(3)
-		if i > 10 {
-			keyval= 3
-		}
+		// if i > 10 {
+		// 	keyval= 3
+		// }
 		key := fmt.Sprintf("Key-%d", keyval)
 		msg := kafka.Message{
 			Key:   []byte(key),

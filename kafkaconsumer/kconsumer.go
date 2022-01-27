@@ -24,7 +24,7 @@ func getKafkaReader(kafkaURL, topic, groupID string) *kafka.Reader {
 func main() {
 
 	kafkaURL := "localhost:9092"
-	topic := "topicTest-0part"
+	topic := "topicTest-3part"
 	groupID := "testConsumer"
 
 	reader := getKafkaReader(kafkaURL, topic, groupID)
