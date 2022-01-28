@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"log"
 
-	"strings"
-
 	kafka "github.com/segmentio/kafka-go"
 )
 
-func getKafkaReader(kafkaURL, topic, groupID string) *kafka.Reader {
-	brokers := strings.Split(kafkaURL, ",")
+var BrokerURLs = []string{
+	
+}
+
+func getKafkaReader(topic, groupID string) *kafka.Reader {
 	return kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  brokers,
+		Brokers:  BrokerURLs,
 		GroupID:  groupID,
 		Topic:    topic,
 		MinBytes: 1, // 1B
@@ -23,11 +24,10 @@ func getKafkaReader(kafkaURL, topic, groupID string) *kafka.Reader {
 
 func main() {
 
-	kafkaURL := "localhost:9092"
-	topic := "topicTest-3part"
+	topic := "topicTest"
 	groupID := "testConsumer"
 
-	reader := getKafkaReader(kafkaURL, topic, groupID)
+	reader := getKafkaReader(topic, groupID)
 
 	defer reader.Close()
 
