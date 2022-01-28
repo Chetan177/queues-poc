@@ -1,4 +1,5 @@
 package main
+
 // https://github.com/aws-samples/aws-msk-content-streaming
 
 import (
@@ -15,18 +16,20 @@ import (
 	kafka "github.com/segmentio/kafka-go"
 )
 
+var BrokerURLs = []string{
+	
+}
+
 func newKafkaWriter(kafkaURL, topic string) *kafka.Writer {
-	return &kafka.Writer{
-		Addr:     kafka.TCP(kafkaURL),
+	kafkaConfig := kafka.WriterConfig{
+		Brokers:  BrokerURLs,
 		Topic:    topic,
 		Balancer: &kafka.Hash{},
 	}
+	return kafka.NewWriter(kafkaConfig)
 }
 
-func main() {
-	kafkaURL := "localhost:9092"
-	topic := "topicTest-3part"
-
+func createKafkaTopic(kafkaURL, topic string) {
 	conn, err := kafka.Dial("tcp", kafkaURL)
 	if err != nil {
 		panic(err.Error())
@@ -46,7 +49,7 @@ func main() {
 		kafka.TopicConfig{
 			Topic:             topic,
 			NumPartitions:     3,
-			ReplicationFactor: 1,
+			ReplicationFactor: 2,
 		},
 	}
 
@@ -56,14 +59,21 @@ func main() {
 	}
 	defer conn.Close()
 
+}
+
+func main() {
+
+	kafkaURL := BrokerURLs[0]
+	topic := "topicTest"
+
+	createKafkaTopic(kafkaURL, topic)
+
 	writer := newKafkaWriter(kafkaURL, topic)
 	defer writer.Close()
 	fmt.Println("start producing ... !!")
+
 	for i := 0; ; i++ {
-		keyval:= rand.Intn(3)
-		// if i > 10 {
-		// 	keyval= 3
-		// }
+		keyval := rand.Intn(3)
 		key := fmt.Sprintf("Key-%d", keyval)
 		msg := kafka.Message{
 			Key:   []byte(key),
