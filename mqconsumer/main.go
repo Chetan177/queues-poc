@@ -15,8 +15,8 @@ import (
 
 var (
 	uri          = flag.String("uri", "amqp://guest:guest@localhost:5672/", "AMQP URI")
-	exchange     = flag.String("exchange", "hash-exchange", "Durable, non-auto-deleted AMQP exchange name")
-	exchangeType = flag.String("exchange-type", "x-consistent-hash", "Exchange type - direct|fanout|topic|x-custom")
+	exchange     = flag.String("exchange", "test-direct-exchange", "Durable, non-auto-deleted AMQP exchange name")
+	exchangeType = flag.String("exchange-type", "direct", "Exchange type - direct|fanout|topic|x-custom")
 	queue        = flag.String("queue", "test-queue", "Ephemeral AMQP queue name")
 	bindingKey   = flag.String("key", "1", "AMQP binding key")
 	consumerTag  = flag.String("consumer-tag", "simple-consumer", "AMQP consumer tag (should not be blank)")
@@ -98,7 +98,8 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 	// 	return nil, fmt.Errorf("Exchange Declare: %s", err)
 	// }
 
-	queueName = "EventQueue-4"
+	key = "sales"
+	queueName = key + "_queue"
 	log.Printf("declared Exchange, declaring Queue %q", queueName)
 	queue, err := c.channel.QueueDeclare(
 		queueName, // name of the queue
@@ -106,7 +107,7 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 		false,     // delete when unused
 		false,     // exclusive
 		false,     // noWait
-		nil,       // arguments
+		amqp.Table{"x-max-priority" : 10},       // arguments
 	)
 
 	if err != nil {
@@ -170,6 +171,7 @@ func handle(deliveries <-chan amqp.Delivery, done chan error) {
 			d.Body,
 		)
 		d.Ack(false)
+		time.Sleep(time.Second * 2)
 	}
 	log.Printf("handle: deliveries channel closed")
 	done <- nil

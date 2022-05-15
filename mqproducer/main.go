@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"math/rand"
 	"time"
 
 	"github.com/streadway/amqp"
@@ -12,8 +11,8 @@ import (
 
 var (
 	uri          = flag.String("uri", "amqp://guest:guest@localhost:5672/", "AMQP URI")
-	exchangeName = flag.String("exchange", "hash-exchange", "Durable AMQP exchange name")
-	exchangeType = flag.String("exchange-type", "x-consistent-hash", "Exchange type - direct|fanout|topic|x-custom")
+	exchangeName = flag.String("exchange", "test-direct-exchange", "Durable AMQP exchange name")
+	exchangeType = flag.String("exchange-type", "direct", "Exchange type - direct|fanout|topic|x-custom")
 	routingKey   = flag.String("key", "test-key", "AMQP routing key")
 	body         = flag.String("body", "foobar", "Body of message")
 	reliable     = flag.Bool("reliable", true, "Wait for the publisher confirmation before exiting")
@@ -78,12 +77,18 @@ func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable 
 	// }
 
 	log.Printf("declared Exchange, publishing %dB body (%q)", len(body), body)
-	
-	for i:= 0; ; i++ {
-		keyval:= rand.Intn(3)
-		routingKey := fmt.Sprintf("Key-%d", keyval)
-
-		log.Printf("publishing %dB body (%q), counter %d", len(body), body, i)
+	var expire string
+	for i := 0; ; i++ {
+		routingKey := "sales"
+		priority := 1
+		if i%5 == 0 {
+			priority = 9
+		}
+		expire := "60000"
+		if i%2 == 0 {
+			expire = "2000"
+		}
+		log.Printf("publishing %dB body (%q), counter %d, expire %s, priority %d", len(body), body, i, expire, priority)
 		if err = channel.Publish(
 			exchange,   // publish to an exchange
 			routingKey, // routing to 0 or more queues
@@ -93,9 +98,10 @@ func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable 
 				Headers:         amqp.Table{},
 				ContentType:     "text/plain",
 				ContentEncoding: "",
-				Body:            []byte(routingKey+" "+body),
-				DeliveryMode:    amqp.Transient, // 1=non-persistent, 2=persistent
-				Priority:        0,              // 0-9
+				Body:            []byte(routingKey + " " + body + " " + fmt.Sprintf("priority=%d", priority) + " " + "expire="+ expire),
+				DeliveryMode:    amqp.Persistent, // 1=non-persistent, 2=persistent
+				Priority:        uint8(priority), // 0-9
+				Expiration:      expire,
 				// a bunch of application/implementation-specific fields
 			},
 		); err != nil {
@@ -104,7 +110,7 @@ func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable 
 
 		time.Sleep(time.Second * 1)
 	}
-	
+
 }
 
 // One would typically keep a channel of publishings, a sequence number, and a
