@@ -77,16 +77,16 @@ func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable 
 	// }
 
 	log.Printf("declared Exchange, publishing %dB body (%q)", len(body), body)
-	var expire string
+
 	for i := 0; ; i++ {
 		routingKey := "sales"
 		priority := 1
 		if i%5 == 0 {
 			priority = 9
 		}
-		expire := "60000"
+		expire := "2000"
 		if i%2 == 0 {
-			expire = "2000"
+			expire = "1000"
 		}
 		log.Printf("publishing %dB body (%q), counter %d, expire %s, priority %d", len(body), body, i, expire, priority)
 		if err = channel.Publish(

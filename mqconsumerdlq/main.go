@@ -85,29 +85,27 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 		return nil, fmt.Errorf("Channel: %s", err)
 	}
 
-	// log.Printf("got Channel, declaring Exchange (%q)", exchange)
-	// if err = c.channel.ExchangeDeclare(
-	// 	exchange,     // name of the exchange
-	// 	exchangeType, // type
-	// 	true,         // durable
-	// 	false,        // delete when complete
-	// 	false,        // internal
-	// 	false,        // noWait
-	// 	nil,          // arguments
-	// ); err != nil {
-	// 	return nil, fmt.Errorf("Exchange Declare: %s", err)
-	// }
+	if err := c.channel.ExchangeDeclare(
+		"user_dlx",
+		"fanout",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	); err != nil {
+		return nil, fmt.Errorf("Exchange Declare: %s", err)
+	}
 
-	key = "sales"
-	queueName = key + "_queue"
+	queueName = "user_create_dlx"
 	log.Printf("declared Exchange, declaring Queue %q", queueName)
 	queue, err := c.channel.QueueDeclare(
-		queueName, // name of the queue
-		true,      // durable
-		false,     // delete when unused
-		false,     // exclusive
-		false,     // noWait
-		amqp.Table{"x-max-priority" : 10, "x-dead-letter-exchange": "user_dlx"},       // arguments
+		"user_create_dlx",
+		true,
+		false,
+		false,
+		false,
+		nil,
 	)
 
 	if err != nil {
@@ -117,12 +115,12 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 	log.Printf("declared Queue (%q %d messages, %d consumers), binding to Exchange (key %q)",
 		queue.Name, queue.Messages, queue.Consumers, key)
 
-	if err = c.channel.QueueBind(
-		queue.Name, // name of the queue
-		key,        // bindingKey
-		exchange,   // sourceExchange
-		false,      // noWait
-		nil,        // arguments
+	if err := c.channel.QueueBind(
+		"user_create_dlx",
+		"",
+		"user_dlx",
+		false,
+		nil,
 	); err != nil {
 		return nil, fmt.Errorf("Queue Bind: %s", err)
 	}
@@ -165,14 +163,12 @@ func (c *Consumer) Shutdown() error {
 func handle(deliveries <-chan amqp.Delivery, done chan error) {
 	for d := range deliveries {
 		log.Printf(
-			"got %dB delivery: [%v] %q",
+			"got message in DLQ %dB delivery: [%v] %q",
 			len(d.Body),
 			d.DeliveryTag,
 			d.Body,
 		)
-		time.Sleep(time.Second * 5)
 		d.Ack(true)
-
 	}
 	log.Printf("handle: deliveries channel closed")
 	done <- nil
