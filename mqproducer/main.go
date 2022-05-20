@@ -11,8 +11,8 @@ import (
 
 var (
 	uri          = flag.String("uri", "amqp://guest:guest@localhost:5672/", "AMQP URI")
-	exchangeName = flag.String("exchange", "test-direct-exchange", "Durable AMQP exchange name")
-	exchangeType = flag.String("exchange-type", "direct", "Exchange type - direct|fanout|topic|x-custom")
+	exchangeName = flag.String("exchange", "test-topic-exchange", "Durable AMQP exchange name")
+	exchangeType = flag.String("exchange-type", "topic", "Exchange type - direct|fanout|topic|x-custom")
 	routingKey   = flag.String("key", "test-key", "AMQP routing key")
 	body         = flag.String("body", "foobar", "Body of message")
 	reliable     = flag.Bool("reliable", true, "Wait for the publisher confirmation before exiting")
@@ -78,16 +78,19 @@ func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable 
 
 	log.Printf("declared Exchange, publishing %dB body (%q)", len(body), body)
 
+	pri := []int{5,1,9}
+	count := 0 
 	for i := 0; ; i++ {
-		routingKey := "sales"
-		priority := 1
-		if i%5 == 0 {
-			priority = 9
+		routingKey := "sales.call"
+		priority := pri[count]
+		count++
+		if count == 3 {
+			count = 0
 		}
-		expire := "2000"
-		if i%2 == 0 {
-			expire = "1000"
-		}
+		expire := "60000"
+		// if i%2 == 0 {
+		// 	expire = "1000"
+		// }
 		log.Printf("publishing %dB body (%q), counter %d, expire %s, priority %d", len(body), body, i, expire, priority)
 		if err = channel.Publish(
 			exchange,   // publish to an exchange
@@ -106,6 +109,9 @@ func publish(amqpURI, exchange, exchangeType, routingKey, body string, reliable 
 			},
 		); err != nil {
 			return fmt.Errorf("Exchange Publish: %s", err)
+		}
+		if i%3 == 0{
+			// time.Sleep(time.Second * 10)
 		}
 
 		time.Sleep(time.Second * 1)
